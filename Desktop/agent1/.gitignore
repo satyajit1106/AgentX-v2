@@ -1,0 +1,11 @@
+env/
+
+.env
+
+tasks.json
+
+__pycache__
+
+res/
+
+angular_prj

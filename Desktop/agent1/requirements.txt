@@ -1,0 +1,11 @@
+dotenv
+langchain
+langchain_groq
+langgraph
+fastapi
+fastapi[standard]
+pypdf
+langchain_huggingface
+langchain_postgres
+langchain_community
+psycopg2
