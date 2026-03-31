@@ -1,0 +1,15 @@
+python-dotenv
+langchain
+langchain-groq
+langchain-huggingface
+langchain-postgres
+langchain-community
+langchain-text-splitters
+langgraph
+fastapi
+fastapi[standard]
+uvicorn
+pypdf
+psycopg2-binary
+groq
+pydantic

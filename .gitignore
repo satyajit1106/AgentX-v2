@@ -1,0 +1,10 @@
+env/
+venv/
+.venv/
+.env
+tasks.json
+res/
+angular_prj/
+__pycache__/
+*.pyc
+graph.png
