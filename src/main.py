@@ -1,10 +1,6 @@
 import base64
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from pydantic import BaseModel
-from helpers.img_recog import analyse_image
-from helpers.gen_instructions import generate_instructions
-from workflow import graph, workflow_config
-from rag import rag_graph
 
 
 class InputState(BaseModel):
@@ -22,9 +18,16 @@ def read_root():
 @api.post("/code")
 def generate_code(state: InputState):
     """Query the RAG system for code generation guidance."""
-    rag_config = {"configurable": {"thread_id": "rag-1"}}
-    messages = rag_graph.invoke({"messages": [state.query]}, config=rag_config)
-    return {"response": messages["messages"][-1].content}
+    try:
+        from rag import rag_graph
+        rag_config = {"configurable": {"thread_id": "rag-1"}}
+        messages = rag_graph.invoke({"messages": [state.query]}, config=rag_config)
+        return {"response": messages["messages"][-1].content}
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"RAG query failed (is PostgreSQL running?): {e}",
+        )
 
 
 @api.post("/upload")
@@ -35,6 +38,10 @@ async def requirement_parser(
 ):
     """Upload SRD + 2 design images to generate a complete Angular project."""
     try:
+        from helpers.img_recog import analyse_image
+        from helpers.gen_instructions import generate_instructions
+        from workflow import graph, workflow_config
+
         doc_content = await document.read()
         img1 = await image1.read()
         img2 = await image2.read()
