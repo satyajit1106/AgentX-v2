@@ -9,20 +9,13 @@ def extract_styles(file_path: str) -> str:
     with open(file_path, "r") as f:
         file_content = f.read()
 
-    prompt = f"""
-    Extract only the data under the UI/UX Design Guidelines section.
+    # Truncate to stay within Groq free tier 6000 TPM limit
+    if len(file_content) > 800:
+        file_content = file_content[:800]
 
-    Focus on:
-    - Color coding (primary, secondary, background, success, error colors)
-    - Typography (font family, font sizes)
-    - Components
+    prompt = f"""Extract UI/UX design guidelines as valid CSS (colors, typography, components). CSS only, no comments.
 
-    Format the output as valid CSS content.
-
-    NOTE: Do not generate any comments or explanations. I want only valid CSS code. Nothing else.
-
-    SRD: {file_content}
-    """
+SRD: {file_content}"""
 
     response = llm.invoke(prompt)
     cleaned_response = response.content.replace("```css", "").replace("```", "").strip()

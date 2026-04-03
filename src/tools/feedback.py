@@ -5,31 +5,20 @@ from utils.model import llm
 @tool
 def critique_tool(task: str, subtask: str, microtask: str, code: str) -> str:
     """Reviews the code, provides a rating (1-10), and suggests improvements."""
-    prompt = f"""
-    Review the following Angular code and provide:
-    1. A rating between 1 to 10 (if it matches the requirements in microtask, give it an 8).
-    2. A brief explanation of the rating.
-    3. Specific feedback for improvements (keep the feedback limited).
+    # Truncate inputs to stay within Groq free tier 6000 TPM limit
+    task = task[:150] if len(task) > 150 else task
+    subtask = subtask[:150] if len(subtask) > 150 else subtask
+    microtask = microtask[:150] if len(microtask) > 150 else microtask
+    code = code[:800] if len(code) > 800 else code
 
-    Task: {task}
-    Subtask: {subtask}
-    Microtask: {microtask}
+    prompt = f"""Review Angular code. Return JSON only: {{"score":<1-10>,"explanation":"...","feedback":"..."}}
+Give 8+ if it matches the microtask. Ensure imports are correct.
 
-    Code:
-    {code}
-
-    Important: Don't inject any code or invalid character in the response.
-    Important: If the code uses any other component, make sure it is imported properly within the same file.
-
-    Format the response as:
-    {{
-        "score": <rating>,
-        "explanation": "<brief_explanation>",
-        "feedback": "<improvements_needed>"
-    }}
-
-    Mandatory: Return only valid JSON, no markdown formatting or extra text.
-    """
+Task: {task}
+Subtask: {subtask}
+Microtask: {microtask}
+Code:
+{code}"""
 
     response = llm.invoke(prompt)
     cleaned_response = response.content.replace("```json", "").replace("```", "").strip()

@@ -9,16 +9,13 @@ def init_docker() -> str:
     with open(TASKS_FILE, "r") as f:
         file_content = f.read()
 
-    prompt = f"""
-    You are a Devops expert capable of writing production grade dockerfiles.
-    Your task is to use the completed tasks below to create an industry-grade
-    Dockerfile for a frontend Angular project.
+    # Truncate to stay within Groq free tier 6000 TPM limit
+    if len(file_content) > 1000:
+        file_content = file_content[:1000]
 
-    Tasks: {file_content}
+    prompt = f"""Generate a production Dockerfile for an Angular project. Output ONLY the Dockerfile content.
 
-    Your response should only include the contents of Dockerfile and nothing else.
-    Don't return any other text content or comments.
-    """
+Tasks: {file_content}"""
 
     response = llm.invoke(prompt)
     cleaned = response.content.replace("```dockerfile", "").replace("```", "").strip()

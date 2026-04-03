@@ -4,7 +4,7 @@
     {
       "name": "AgentX FastAPI Server",
       "runtimeExecutable": "venv/Scripts/python.exe",
-      "runtimeArgs": ["-m", "uvicorn", "main:api", "--reload", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "src"],
+      "runtimeArgs": ["-m", "uvicorn", "main:api", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "src"],
       "port": 8000
     }
   ]

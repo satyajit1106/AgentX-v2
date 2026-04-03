@@ -1,7 +1,26 @@
 import json
+import re
 from langchain.tools import tool
 from utils.model import llm
 from core.config import TASKS_FILE
+
+
+def extract_json(text: str) -> dict:
+    """Extract JSON from LLM response that may contain extra text or markdown."""
+    cleaned = text.replace("```json", "").replace("```", "").strip()
+    # Try parsing the whole thing first
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+    # Find the first { ... } block
+    match = re.search(r'\{.*\}', cleaned, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group())
+        except json.JSONDecodeError:
+            pass
+    raise ValueError(f"Could not extract valid JSON from LLM response: {cleaned[:200]}")
 
 
 @tool
@@ -13,62 +32,19 @@ def extract_tasks(file_path: str) -> str:
     with open(file_path, "r") as f:
         file_content = f.read()
 
-    prompt = f"""
-    Analyse the following Software Requirements Document (SRD) and break it down into:
-    - High-level tasks
-    - Subtasks for each task
-    - Microtasks for each subtask (be extremely detailed)
+    # Truncate to ~800 chars to stay within Groq free tier 6000 TPM limit
+    if len(file_content) > 800:
+        file_content = file_content[:800]
 
-    Tasks should be crisp and clear. Don't create unnecessary tasks, only create it if it's required.
+    prompt = f"""Break this SRD into tasks as JSON. No .scss/.html files (inline only). Angular project already set up. Skip styling tasks.
+Format: {{"tasks":[{{"task":"...","completed":false,"subtasks":[{{"subtask":"...","completed":false,"microtasks":[{{"microtask":"...","completed":false}}]}}]}}]}}
 
-    Important: Never create tasks to create .scss and .html files because inline templates and styling is used.
+{file_content}
 
-    Strictly output the result in a JSON format like this:
-    You cannot add or remove any keys in this format
-    {{
-        "tasks": [
-            {{
-                "task": "Setup Angular Project",
-                "completed": false,
-                "subtasks": [
-                    {{
-                        "subtask": "Initialize project",
-                        "completed": false,
-                        "microtasks": [{{
-                            "microtask": "Run ng new",
-                            "completed": false
-                        }}, {{
-                            "microtask": "Configure tsconfig.json",
-                            "completed": false
-                        }}]
-                    }}
-                ]
-            }}
-        ]
-    }}
-
-    Here is the SRD:
-    {file_content}
-
-    Attention: Assume that the initial angular project setup has been completed and you are
-    in that working directory with the following files:
-    1. src/app/components (empty directory)
-    2. src/app/services (empty directory)
-    3. src/app/pages (empty directory)
-    4. src/app/app.component.ts
-    5. src/app/app.routes.ts
-    6. src/index.html
-    7. src/styles.scss
-    8. src/main.ts
-
-    Rule: Global styles (color codes, font family, etc.) are configured already. Do not generate any task related to colors, typography, etc.
-
-    Mandatory: Do not generate things like 'Here is the ...' or 'Sure, ...'. Don't give anything except the json content as response.
-    """
+JSON only:"""
 
     response = llm.invoke(prompt)
-    cleaned_response = response.content.replace("```json", "").replace("```", "").strip()
-    tasks_json = json.loads(cleaned_response)
+    tasks_json = extract_json(response.content)
 
     with open(TASKS_FILE, "w") as f:
         json.dump(tasks_json, f, indent=4)

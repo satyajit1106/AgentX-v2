@@ -5,28 +5,20 @@ from utils.model import llm
 @tool
 def generate_code(task: str, subtask: str, microtask: str, feedback: str | None) -> str:
     """Generates Angular code for the given task using LLM."""
-    prompt = f"""
-    Generate high-quality Angular code for the following task.
+    # Truncate inputs to stay within Groq free tier 6000 TPM limit
+    task = task[:200] if len(task) > 200 else task
+    subtask = subtask[:200] if len(subtask) > 200 else subtask
+    microtask = microtask[:200] if len(microtask) > 200 else microtask
 
-    Important: You can only write to .ts files. You cannot generate just html or scss individually.
-    You need to generate a single .ts file with template and styling defined inline.
+    prompt = f"""Generate Angular .ts code with inline template and styling. Full code, no comments, no explanation. One file only.
 
-    Important: Always give the contents of the full code. No partial code has to be returned.
-
-    Task: {task}
-    Subtask: {subtask}
-    Microtask: {microtask}
-
-    Rules:
-    1. Ensure the code follows best practices and is production-ready.
-    2. Write inline template and styling.
-    3. Do not generate any kind of comments or explanation. Just give the raw code.
-
-    Mandatory: You must write only one file at a time. And don't add a single comment in it.
-    """
+Task: {task}
+Subtask: {subtask}
+Microtask: {microtask}"""
 
     if feedback:
-        prompt += f"\n\nModify the existing code based on following feedback: \n\n{feedback}"
+        feedback = feedback[:300] if len(feedback) > 300 else feedback
+        prompt += f"\n\nFeedback to apply: {feedback}"
 
     response = llm.invoke(prompt)
     cleaned_response = (
