@@ -9,16 +9,13 @@ def write_documentation() -> str:
     with open(TASKS_FILE, "r") as f:
         file_content = f.read()
 
-    prompt = f"""
-    You are an expert technical writer capable of writing good documentation.
-    Your task is to use the completed tasks below to create an industry-grade
-    README.md file for a frontend Angular project.
+    # Truncate to stay within Groq free tier 6000 TPM limit
+    if len(file_content) > 1000:
+        file_content = file_content[:1000]
 
-    Tasks: {file_content}
+    prompt = f"""Generate README.md for an Angular project based on these tasks. Output ONLY the README content.
 
-    Your response should only include the contents of README.md and nothing else.
-    Don't return any other text content or comments.
-    """
+Tasks: {file_content}"""
 
     response = llm.invoke(prompt)
 

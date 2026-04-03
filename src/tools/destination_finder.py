@@ -5,29 +5,14 @@ from utils.model import llm
 @tool
 def determine_file_path(code: str) -> str:
     """Identifies the file path where the code has to be written."""
-    prompt = f"""
-    Based on the code below, tell me the path where I need to write this.
+    # Truncate to stay within Groq free tier 6000 TPM limit
+    if len(code) > 800:
+        code = code[:800]
 
-    I have an Angular project set up already with src/app, src/app/components, src/app/pages and src/app/services.
+    prompt = f"""Return the file path for this Angular code. One line only, e.g. src/app/components/name.ts
+No folders inside components/services. No comments.
 
-    Output example: 'src/app/components/app.component.ts'
-
-    Rules:
-    1. Don't generate any comments or explanation.
-    2. Just return a single line containing the path.
-    3. Don't format anything.
-    4. Return the file path relative to the Angular project root, ending with an extension.
-
-    Important: You can only generate the output path for 1 file at a time.
-
-    Don't generate folders inside components/ or services/ just write the files.
-    For example:
-    src/app/components/primary-color-button.ts - is valid
-    src/app/components/primary-color-button/primary-color-button.ts - is invalid
-
-    Code:
-    {code}
-    """
+{code}"""
 
     response = llm.invoke(prompt)
     cleaned_response = response.content.replace("\n", "").strip()

@@ -1,6 +1,8 @@
 import base64
+import io
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from pydantic import BaseModel
+from pypdf import PdfReader
 
 
 class InputState(BaseModel):
@@ -42,13 +44,20 @@ async def requirement_parser(
         from helpers.gen_instructions import generate_instructions
         from workflow import graph, workflow_config
 
-        doc_content = await document.read()
+        doc_bytes = await document.read()
         img1 = await image1.read()
         img2 = await image2.read()
 
         print(f"Document: {document.filename}")
         print(f"Image 1: {image1.filename}")
         print(f"Image 2: {image2.filename}")
+
+        # Extract text from PDF or decode as plain text
+        if document.filename and document.filename.lower().endswith(".pdf"):
+            reader = PdfReader(io.BytesIO(doc_bytes))
+            doc_content = "\n".join(page.extract_text() or "" for page in reader.pages)
+        else:
+            doc_content = doc_bytes.decode("utf-8")
 
         base64_img1 = base64.b64encode(img1).decode("utf-8")
         base64_img2 = base64.b64encode(img2).decode("utf-8")
@@ -57,7 +66,7 @@ async def requirement_parser(
         img2_features = analyse_image(base64_img2)
 
         file_path = generate_instructions(
-            doc_content.decode("utf-8"), img1_features, img2_features
+            doc_content, img1_features, img2_features
         )
 
         graph.invoke({"file_path": file_path, "status": ""}, config=workflow_config)
